@@ -76,11 +76,14 @@ function App() {
           // Add any additional data structure needed by your API
         };
         
-        // Send to API
-        const response = await axios.post(`${API}/search-people`, structuredData);
+        // For testing: Use mock data instead of API call
+        // In production, uncomment the API call and remove the mock data usage
+        // const response = await axios.post(`${API}/search-people`, structuredData);
+        // setPeople(response.data.people || []);
         
-        // Update people state with API response
-        setPeople(response.data.people || []);
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setPeople(mockPeopleData.people);
       } catch (err) {
         setError(`API request failed: ${err.message}`);
       } finally {

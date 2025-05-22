@@ -1,38 +1,110 @@
-.App {
-    text-align: center;
+/* Main container */
+.app-container {
+  @apply flex flex-col items-center justify-start min-h-screen bg-gray-100 px-4 py-8;
 }
 
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Header */
+.header {
+  @apply w-full text-center mb-8;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.title {
+  @apply text-3xl font-bold text-gray-800;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Button container */
+.button-container {
+  @apply w-full flex justify-center mb-8;
 }
 
-.App-link {
-    color: #61dafb;
+/* Talk button styling */
+.talk-button {
+  @apply bg-green-500 hover:bg-green-600 text-white font-bold text-xl py-6 px-8 rounded-full
+         shadow-lg transform transition-all duration-200 active:scale-95 
+         focus:outline-none focus:ring-4 focus:ring-green-300 w-64 h-64 flex items-center justify-center;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Recording state */
+.talk-button.recording {
+  @apply bg-red-500 hover:bg-red-600 animate-pulse scale-105 focus:ring-red-300;
+}
+
+/* Text display */
+.text-container {
+  @apply w-full max-w-2xl bg-white rounded-lg shadow-md p-4 mb-8;
+}
+
+.recognized-text {
+  @apply text-lg text-gray-700;
+}
+
+/* Loading indicator */
+.loading-container {
+  @apply flex flex-col items-center justify-center p-4;
+}
+
+.loading-spinner {
+  @apply w-10 h-10 border-4 border-gray-300 rounded-full animate-spin;
+  border-top-color: #10b981;
+}
+
+/* Error message */
+.error-container {
+  @apply w-full max-w-2xl bg-red-50 text-red-800 rounded-lg p-4 mb-8;
+}
+
+.error-message {
+  @apply text-center;
+}
+
+/* Results section */
+.results-container {
+  @apply w-full max-w-2xl;
+}
+
+.results-title {
+  @apply text-2xl font-bold text-gray-800 mb-4;
+}
+
+.people-list {
+  @apply space-y-4;
+}
+
+.person-card {
+  @apply bg-white rounded-lg shadow-md p-4 flex items-start;
+}
+
+.person-image {
+  @apply w-24 h-24 mr-4 flex-shrink-0;
+}
+
+.person-image img {
+  @apply w-full h-full object-cover rounded-lg;
+}
+
+.person-details {
+  @apply flex-1;
+}
+
+.person-name {
+  @apply text-xl font-bold text-gray-800 mb-1;
+}
+
+.person-description {
+  @apply text-gray-600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .talk-button {
+    @apply w-48 h-48 text-lg;
+  }
+  
+  .person-card {
+    @apply flex-col;
+  }
+  
+  .person-image {
+    @apply w-full h-40 mb-4 mr-0;
+  }
 }

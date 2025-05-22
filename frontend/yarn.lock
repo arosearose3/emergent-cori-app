@@ -1081,6 +1081,11 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@capacitor-community/speech-recognition@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@capacitor-community/speech-recognition/-/speech-recognition-7.0.0.tgz#dbf1aeddbc9edf5bb5370796c2375d9cae2aed27"
+  integrity sha512-GwNaijf0Q2LilNtlnfKL2dJB6voZYOm95D6dbhzPwa1mV+PnzwcGCaeipjbID3oRlAnsDUFEFiakbdZDyxe54w==
+
 "@capacitor/android@^7.2.0":
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/@capacitor/android/-/android-7.2.0.tgz#f30e313315ab92c500bd57d9f0c4716a46b42f40"

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
+import { Device } from "@capacitor/device";
+import { useSwipeable } from "react-swipeable";
 import axios from "axios";
 import "./App.css";
 // Import mock data
@@ -10,24 +12,49 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 const API = `${BACKEND_URL}/api`;
 
 function App() {
+  // App state
+  const [appStage, setAppStage] = useState("initial"); // initial, availability, complaint
   const [isRecording, setIsRecording] = useState(false);
   const [text, setText] = useState("");
+  const [availability, setAvailability] = useState("");
+  const [complaint, setComplaint] = useState("");
   const [people, setPeople] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [userInfo, setUserInfo] = useState({ name: "", email: "" });
+  const [responses, setResponses] = useState({});
   
   // Speech recognition reference
   const recognitionRef = useRef(null);
 
-  // Verify mock data is loaded correctly
+  // Get device info on component mount
   useEffect(() => {
+    const getUserInfo = async () => {
+      try {
+        // In a real app, you would get this from the device or account system
+        // For this demo, we'll use mock data
+        
+        // Uncomment for real implementation with Capacitor Device API:
+        // const deviceInfo = await Device.getInfo();
+        // const deviceId = deviceInfo.uuid;
+        
+        // For demonstration purposes:
+        setUserInfo({
+          name: "John Doe",
+          email: "johndoe@example.com"
+        });
+      } catch (err) {
+        console.error("Error getting user info:", err);
+      }
+    };
+    
+    getUserInfo();
     console.log("Mock data loaded:", mockPeopleData);
   }, []);
   
   // Start recording when button is pressed
   const startRecording = () => {
     setIsRecording(true);
-    setText("");
     setError(null);
     
     try {
@@ -66,9 +93,9 @@ function App() {
     }
   };
   
-  // Stop recording when button is released
-  const stopRecording = async () => {
-    console.log("Stopping recording, current text:", text);
+  // Stop recording when button is released (availability stage)
+  const stopRecordingAvailability = async () => {
+    console.log("Stopping recording for availability, current text:", text);
     
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -78,31 +105,38 @@ function App() {
     setIsRecording(false);
     
     // Use a fallback text if no speech was recognized
-    const searchText = text || "fallback search query";
+    const availabilityText = text || "No availability specified";
+    setAvailability(availabilityText);
     
     try {
-      console.log("Processing search with text:", searchText);
+      console.log("Processing search with text:", availabilityText);
       setIsLoading(true);
       
       // Transform text to structured JSON
       const structuredData = {
-        query: searchText,
+        query: availabilityText,
         timestamp: new Date().toISOString(),
+        userInfo: userInfo
       };
       
       console.log("Structured data:", structuredData);
       
       // For testing: Use mock data instead of API call
       // In production, uncomment the API call and remove the mock data usage
-      // const response = await axios.post(`${API}/search-people`, structuredData);
+      // const response = await axios.post(`${API}/search-counselors`, structuredData);
       // setPeople(response.data.people || []);
       
       // Simulate network delay
       console.log("Simulating API call with mock data...");
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Update the people with mock data (would be counselors from the API)
       console.log("Setting people with mock data:", mockPeopleData.people);
       setPeople(mockPeopleData.people);
+      
+      // Move to the next stage (complaint)
+      setAppStage("complaint");
+      setText(""); // Clear text for next stage
     } catch (err) {
       console.error("API request failed:", err);
       setError(`API request failed: ${err.message}`);
@@ -111,52 +145,255 @@ function App() {
     }
   };
   
+  // Stop recording for complaint
+  const stopRecordingComplaint = () => {
+    console.log("Stopping recording for complaint, current text:", text);
+    
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    
+    setIsRecording(false);
+    setComplaint(text || "No complaint specified");
+  };
+  
+  // Confirm complaint
+  const confirmComplaint = () => {
+    console.log("Complaint confirmed:", complaint);
+  };
+  
+  // Clear complaint and start over
+  const clearComplaint = () => {
+    setComplaint("");
+    setText("");
+  };
+  
+  // Remove a person from the list
+  const removePerson = (personId) => {
+    setPeople(people.filter(person => person.id !== personId));
+  };
+  
+  // Handle long press on a counselor
+  const handleCounselorLongPress = async (counselor) => {
+    try {
+      setIsLoading(true);
+      
+      // Prepare data for API call
+      const requestData = {
+        patientName: userInfo.name,
+        patientEmail: userInfo.email,
+        chiefComplaint: complaint,
+        therapistId: counselor.id
+      };
+      
+      console.log("Sending request to reach out:", requestData);
+      
+      // Simulate API call
+      // In production, use a real API call:
+      // const response = await axios.post(`${API}/reach-out`, requestData);
+      // const responseText = response.data.message;
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mock response
+      const responseText = `Thank you for reaching out to ${counselor.name}. They will contact you at ${userInfo.email} within 24 hours to discuss your appointment options.`;
+      
+      // Store the response for this counselor
+      setResponses(prev => ({
+        ...prev,
+        [counselor.id]: responseText
+      }));
+    } catch (err) {
+      console.error("Failed to reach out:", err);
+      setError(`Failed to reach out: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Render person card with swipe functionality
+  const renderPersonCard = (person) => {
+    const swipeHandlers = useSwipeable({
+      onSwipedLeft: () => removePerson(person.id),
+      onSwipedRight: () => removePerson(person.id),
+      preventDefaultTouchmoveEvent: true,
+      trackMouse: true
+    });
+    
+    // Create a ref for long press detection
+    const pressTimer = useRef(null);
+    const startPress = () => {
+      pressTimer.current = setTimeout(() => {
+        handleCounselorLongPress(person);
+      }, 800); // 800ms for long press
+    };
+    const endPress = () => {
+      clearTimeout(pressTimer.current);
+    };
+    
+    return (
+      <div 
+        key={person.id} 
+        className="person-card"
+        {...swipeHandlers}
+        onMouseDown={startPress}
+        onMouseUp={endPress}
+        onMouseLeave={endPress}
+        onTouchStart={startPress}
+        onTouchEnd={endPress}
+      >
+        <div className="swipe-instruction">Swipe left or right to remove</div>
+        <div className="person-image">
+          <img src={person.photo} alt={person.name} />
+        </div>
+        <div className="person-details">
+          <h3 className="person-name">{person.name}</h3>
+          <p className="person-description">{person.description}</p>
+          
+          {responses[person.id] && (
+            <div className="response-message">
+              {responses[person.id]}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
   // Simulated button press for testing in browser
   const handleSimulateSearch = () => {
-    const demoText = "Find software engineers in San Francisco";
+    const demoText = "I'm available Tuesdays after 4pm and Thursday mornings";
     console.log("Simulating search with text:", demoText);
     setText(demoText);
+    setAvailability(demoText);
     
     // Process the simulated search
     setIsLoading(true);
     setTimeout(() => {
       console.log("Setting people with mock data:", mockPeopleData.people);
       setPeople(mockPeopleData.people);
+      setAppStage("complaint");
       setIsLoading(false);
     }, 1000);
   };
   
+  // Render the main content based on app stage
+  const renderMainContent = () => {
+    switch (appStage) {
+      case "initial":
+        return (
+          <>
+            <div className="button-container">
+              <button
+                className={`talk-button ${isRecording ? 'recording' : ''}`}
+                onMouseDown={startRecording}
+                onMouseUp={stopRecordingAvailability}
+                onTouchStart={startRecording}
+                onTouchEnd={stopRecordingAvailability}
+              >
+                {isRecording 
+                  ? "Release when done" 
+                  : "Press to talk. Say when you are available for an appointment, like 'Tuesdays after 4'"}
+              </button>
+            </div>
+            
+            {text && (
+              <div className="text-container">
+                <p className="recognized-text">"{text}"</p>
+              </div>
+            )}
+          </>
+        );
+        
+      case "complaint":
+        return (
+          <>
+            {availability && (
+              <div className="availability-container">
+                <h3>Your Availability:</h3>
+                <p>{availability}</p>
+              </div>
+            )}
+            
+            <div className="button-container">
+              <button
+                className={`complaint-button ${isRecording ? 'recording' : ''}`}
+                onMouseDown={startRecording}
+                onMouseUp={stopRecordingComplaint}
+                onTouchStart={startRecording}
+                onTouchEnd={stopRecordingComplaint}
+              >
+                {isRecording ? "Release when done" : "Say your chief complaint"}
+              </button>
+            </div>
+            
+            {text && !complaint && (
+              <div className="text-container">
+                <p className="recognized-text">"{text}"</p>
+                <div className="text-actions">
+                  <button 
+                    className="confirm-button"
+                    onClick={() => setComplaint(text)}
+                  >
+                    Confirm
+                  </button>
+                  <button 
+                    className="erase-button"
+                    onClick={() => setText("")}
+                  >
+                    Erase
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {complaint && (
+              <div className="complaint-container">
+                <h3>Your Chief Complaint:</h3>
+                <p>{complaint}</p>
+                <button 
+                  className="edit-button"
+                  onClick={clearComplaint}
+                >
+                  Edit
+                </button>
+              </div>
+            )}
+          </>
+        );
+        
+      default:
+        return null;
+    }
+  };
+  
   return (
     <div className="app-container">
+      {/* User info header */}
+      <div className="user-info-header">
+        <div className="user-info">
+          <span className="user-name">{userInfo.name}</span>
+          <span className="user-email">{userInfo.email}</span>
+        </div>
+      </div>
+      
       <div className="header">
-        <h1 className="title">Voice Search</h1>
-        {/* Testing button for browsers that don't support speech recognition */}
+        <h1 className="title">Therapist Finder</h1>
+        {/* Testing button for browsers */}
         <button 
           onClick={handleSimulateSearch}
           className="test-button"
         >
-          Simulate Search (Test)
+          Simulate Availability (Test)
         </button>
       </div>
       
-      <div className="button-container">
-        <button
-          className={`talk-button ${isRecording ? 'recording' : ''}`}
-          onMouseDown={startRecording}
-          onMouseUp={stopRecording}
-          onTouchStart={startRecording}
-          onTouchEnd={stopRecording}
-        >
-          {isRecording ? "Release to Search" : "Press To Talk"}
-        </button>
-      </div>
+      {/* Main content area */}
+      {renderMainContent()}
       
-      {text && (
-        <div className="text-container">
-          <p className="recognized-text">"{text}"</p>
-        </div>
-      )}
-      
+      {/* Loading indicator */}
       {isLoading && (
         <div className="loading-container">
           <div className="loading-spinner"></div>
@@ -164,27 +401,20 @@ function App() {
         </div>
       )}
       
+      {/* Error message */}
       {error && (
         <div className="error-container">
           <p className="error-message">{error}</p>
         </div>
       )}
       
+      {/* Results section */}
       {people.length > 0 && (
         <div className="results-container">
-          <h2 className="results-title">Results</h2>
+          <h2 className="results-title">Available Counselors</h2>
+          <p className="long-press-instruction">Long Press a counselor to reach out.</p>
           <div className="people-list">
-            {people.map((person, index) => (
-              <div key={index} className="person-card">
-                <div className="person-image">
-                  <img src={person.photo} alt={person.name} />
-                </div>
-                <div className="person-details">
-                  <h3 className="person-name">{person.name}</h3>
-                  <p className="person-description">{person.description}</p>
-                </div>
-              </div>
-            ))}
+            {people.map(person => renderPersonCard(person))}
           </div>
         </div>
       )}

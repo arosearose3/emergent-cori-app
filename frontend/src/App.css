@@ -3,6 +3,23 @@
   @apply flex flex-col items-center justify-start min-h-screen bg-gray-100 px-4 py-8;
 }
 
+/* User info header */
+.user-info-header {
+  @apply w-full bg-gray-800 text-white py-2 px-4 mb-4 sticky top-0 z-10 flex justify-center;
+}
+
+.user-info {
+  @apply flex flex-col items-center;
+}
+
+.user-name {
+  @apply font-bold text-lg;
+}
+
+.user-email {
+  @apply text-sm text-gray-300;
+}
+
 /* Header */
 .header {
   @apply w-full text-center mb-8;
@@ -27,11 +44,20 @@
 .talk-button {
   @apply bg-green-500 hover:bg-green-600 text-white font-bold text-xl py-6 px-8 rounded-full
          shadow-lg transform transition-all duration-200 active:scale-95 
-         focus:outline-none focus:ring-4 focus:ring-green-300 w-64 h-64 flex items-center justify-center;
+         focus:outline-none focus:ring-4 focus:ring-green-300 flex flex-col items-center justify-center
+         h-64 w-64 text-center;
+}
+
+/* Complaint button styling */
+.complaint-button {
+  @apply bg-blue-500 hover:bg-blue-600 text-white font-bold text-xl py-6 px-8 rounded-full
+         shadow-lg transform transition-all duration-200 active:scale-95 
+         focus:outline-none focus:ring-4 focus:ring-blue-300 flex items-center justify-center
+         h-64 w-64 text-center;
 }
 
 /* Recording state */
-.talk-button.recording {
+.talk-button.recording, .complaint-button.recording {
   @apply bg-red-500 hover:bg-red-600 animate-pulse scale-105 focus:ring-red-300;
 }
 
@@ -41,7 +67,33 @@
 }
 
 .recognized-text {
-  @apply text-lg text-gray-700 text-center italic;
+  @apply text-lg text-gray-700 text-center italic mb-4;
+}
+
+.text-actions {
+  @apply flex justify-center space-x-4;
+}
+
+.confirm-button {
+  @apply bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors;
+}
+
+.erase-button {
+  @apply bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors;
+}
+
+.edit-button {
+  @apply bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors mt-2;
+}
+
+/* Availability display */
+.availability-container {
+  @apply w-full max-w-2xl bg-white rounded-lg shadow-md p-4 mb-6;
+}
+
+/* Complaint display */
+.complaint-container {
+  @apply w-full max-w-2xl bg-white rounded-lg shadow-md p-4 mb-8;
 }
 
 /* Loading indicator */
@@ -69,7 +121,11 @@
 }
 
 .results-title {
-  @apply text-2xl font-bold text-gray-800 mb-4;
+  @apply text-2xl font-bold text-gray-800 mb-2;
+}
+
+.long-press-instruction {
+  @apply text-gray-600 italic mb-4;
 }
 
 .people-list {
@@ -77,7 +133,16 @@
 }
 
 .person-card {
-  @apply bg-white rounded-lg shadow-md p-4 flex items-start;
+  @apply bg-white rounded-lg shadow-md p-4 flex items-start relative
+         transform transition-transform duration-200;
+}
+
+.person-card:active {
+  @apply scale-[0.98];
+}
+
+.swipe-instruction {
+  @apply absolute top-0 right-0 text-xs text-gray-400 italic p-1;
 }
 
 .person-image {
@@ -97,13 +162,18 @@
 }
 
 .person-description {
-  @apply text-gray-600;
+  @apply text-gray-600 mb-2;
+}
+
+.response-message {
+  @apply bg-green-50 text-green-800 p-3 rounded-lg mt-2 text-sm;
 }
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-  .talk-button {
-    @apply w-48 h-48 text-lg;
+  .talk-button, .complaint-button {
+    @apply w-72 h-72 text-lg px-4;
+    font-size: 1rem;
   }
   
   .person-card {

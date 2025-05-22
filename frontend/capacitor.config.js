@@ -6,6 +6,9 @@ const config = {
   plugins: {
     SplashScreen: {
       launchShowDuration: 0
+    },
+    SpeechRecognition: {
+      androidPermissions: ["android.permission.RECORD_AUDIO"]
     }
   },
   server: {

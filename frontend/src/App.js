@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import axios from "axios";
 import "./App.css";
+import { mockPeopleData } from "./mockData";
 
 // Backend URL from environment variables
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

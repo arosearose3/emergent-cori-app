@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Device } from "@capacitor/device";
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { useSwipeable } from "react-swipeable";
 import axios from "axios";
 import "./App.css";
@@ -23,9 +24,33 @@ function App() {
   const [error, setError] = useState(null);
   const [userInfo, setUserInfo] = useState({ name: "", email: "" });
   const [responses, setResponses] = useState({});
+  const [speechAvailable, setSpeechAvailable] = useState(false);
   
-  // Speech recognition reference
-  const recognitionRef = useRef(null);
+  // Initialize speech recognition on component mount
+  useEffect(() => {
+    const initSpeechRecognition = async () => {
+      try {
+        // Request permission for speech recognition
+        await SpeechRecognition.requestPermission();
+        
+        // Check if speech recognition is available
+        const available = await SpeechRecognition.available();
+        
+        if (available) {
+          console.log("Speech recognition is available");
+          setSpeechAvailable(true);
+        } else {
+          console.error("Speech recognition is not available on this device");
+          setError("Speech recognition is not available on this device");
+        }
+      } catch (err) {
+        console.error("Error initializing speech recognition:", err);
+        setError(`Error initializing speech recognition: ${err.message}`);
+      }
+    };
+    
+    initSpeechRecognition();
+  }, []);
 
   // Get device info on component mount
   useEffect(() => {
@@ -53,109 +78,142 @@ function App() {
   }, []);
   
   // Start recording when button is pressed
-  const startRecording = useCallback(() => {
+  const startRecording = useCallback(async () => {
     setIsRecording(true);
     setError(null);
     
     try {
-      // Check if SpeechRecognition is available
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      
-      if (!SpeechRecognition) {
-        throw new Error("Speech recognition not supported in this browser.");
+      if (!speechAvailable) {
+        throw new Error("Speech recognition is not available");
       }
       
-      console.log("Starting speech recognition...");
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
+      // Start the speech recognition
+      console.log("Starting speech recognition with Capacitor plugin...");
       
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0].transcript)
-          .join("");
-        
-        console.log("Transcript:", transcript);
-        setText(transcript);
-      };
+      // Set up the listener for partial results
+      SpeechRecognition.addListener('partialResults', (data) => {
+        if (data.matches && data.matches.length > 0) {
+          console.log("Partial results:", data.matches[0]);
+          setText(data.matches[0]);
+        }
+      });
       
-      recognitionRef.current.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
-        setError(`Speech recognition error: ${event.error}`);
-        setIsRecording(false);
-      };
+      // Start the speech recognition
+      await SpeechRecognition.start({
+        language: 'en-US',
+        partialResults: true,
+        popup: false,
+      });
       
-      recognitionRef.current.start();
     } catch (err) {
       console.error("Failed to start recording:", err);
       setError(`Failed to start recording: ${err.message}`);
       setIsRecording(false);
     }
-  }, []);
+  }, [speechAvailable]);
   
   // Stop recording when button is released (availability stage)
   const stopRecordingAvailability = useCallback(async () => {
-    console.log("Stopping recording for availability, current text:", text);
-    
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    
-    setIsRecording(false);
-    
-    // Use a fallback text if no speech was recognized
-    const availabilityText = text || "No availability specified";
-    setAvailability(availabilityText);
+    console.log("Stopping recording for availability");
     
     try {
-      console.log("Processing search with text:", availabilityText);
-      setIsLoading(true);
+      // Stop the speech recognition
+      const result = await SpeechRecognition.stop();
+      console.log("Speech recognition result:", result);
       
-      // Transform text to structured JSON
-      const structuredData = {
-        query: availabilityText,
-        timestamp: new Date().toISOString(),
-        userInfo: userInfo
-      };
+      // Remove listeners
+      SpeechRecognition.removeAllListeners();
       
-      console.log("Structured data:", structuredData);
+      setIsRecording(false);
       
-      // For testing: Use mock data instead of API call
-      // In production, uncomment the API call and remove the mock data usage
-      // const response = await axios.post(`${API}/search-counselors`, structuredData);
-      // setPeople(response.data.people || []);
+      // Use the final results if available
+      let availabilityText = text;
+      if (result && result.matches && result.matches.length > 0) {
+        availabilityText = result.matches[0];
+        setText(availabilityText);
+      }
       
-      // Simulate network delay
-      console.log("Simulating API call with mock data...");
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Use a fallback text if no speech was recognized
+      if (!availabilityText) {
+        availabilityText = "No availability specified";
+      }
       
-      // Update the people with mock data (would be counselors from the API)
-      console.log("Setting people with mock data:", mockPeopleData.people);
-      setPeople(mockPeopleData.people);
+      setAvailability(availabilityText);
       
-      // Move to the next stage (complaint)
-      setAppStage("complaint");
-      setText(""); // Clear text for next stage
+      try {
+        console.log("Processing search with text:", availabilityText);
+        setIsLoading(true);
+        
+        // Transform text to structured JSON
+        const structuredData = {
+          query: availabilityText,
+          timestamp: new Date().toISOString(),
+          userInfo: userInfo
+        };
+        
+        console.log("Structured data:", structuredData);
+        
+        // For testing: Use mock data instead of API call
+        // In production, uncomment the API call and remove the mock data usage
+        // const response = await axios.post(`${API}/search-counselors`, structuredData);
+        // setPeople(response.data.people || []);
+        
+        // Simulate network delay
+        console.log("Simulating API call with mock data...");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Update the people with mock data (would be counselors from the API)
+        console.log("Setting people with mock data:", mockPeopleData.people);
+        setPeople(mockPeopleData.people);
+        
+        // Move to the next stage (complaint)
+        setAppStage("complaint");
+        setText(""); // Clear text for next stage
+      } catch (err) {
+        console.error("API request failed:", err);
+        setError(`API request failed: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     } catch (err) {
-      console.error("API request failed:", err);
-      setError(`API request failed: ${err.message}`);
-    } finally {
-      setIsLoading(false);
+      console.error("Error stopping speech recognition:", err);
+      setError(`Error stopping speech recognition: ${err.message}`);
+      setIsRecording(false);
     }
   }, [text, userInfo]);
   
   // Stop recording for complaint
-  const stopRecordingComplaint = useCallback(() => {
-    console.log("Stopping recording for complaint, current text:", text);
+  const stopRecordingComplaint = useCallback(async () => {
+    console.log("Stopping recording for complaint");
     
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
+    try {
+      // Stop the speech recognition
+      const result = await SpeechRecognition.stop();
+      console.log("Speech recognition result:", result);
+      
+      // Remove listeners
+      SpeechRecognition.removeAllListeners();
+      
+      setIsRecording(false);
+      
+      // Use the final results if available
+      let complaintText = text;
+      if (result && result.matches && result.matches.length > 0) {
+        complaintText = result.matches[0];
+        setText(complaintText);
+      }
+      
+      // Use a fallback text if no speech was recognized
+      if (!complaintText) {
+        complaintText = "No complaint specified";
+      }
+      
+      setComplaint(complaintText);
+    } catch (err) {
+      console.error("Error stopping speech recognition:", err);
+      setError(`Error stopping speech recognition: ${err.message}`);
+      setIsRecording(false);
     }
-    
-    setIsRecording(false);
-    setComplaint(text || "No complaint specified");
   }, [text]);
   
   // Confirm complaint
@@ -404,6 +462,14 @@ function App() {
             Simulate Availability (Test)
           </button>
         )}
+        
+        {/* Show test button in production for demo purposes */}
+        <button 
+          onClick={handleSimulateSearch}
+          className="test-button"
+        >
+          Simulate (Test)
+        </button>
       </div>
       
       {/* Main content - conditionally rendered based on app stage */}

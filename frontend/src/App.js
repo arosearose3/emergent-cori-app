@@ -279,104 +279,111 @@ function App() {
     );
   }, [removePerson, handleCounselorLongPress, responses]);
   
-  // Render the main content based on app stage
-  const renderMainContent = useCallback(() => {
-    switch (appStage) {
-      case "initial":
-        return (
-          <>
-            <div className="button-container">
-              <button
-                className={`talk-button ${isRecording ? 'recording' : ''}`}
-                onMouseDown={startRecording}
-                onMouseUp={stopRecordingAvailability}
-                onTouchStart={startRecording}
-                onTouchEnd={stopRecordingAvailability}
+  // Render the initial stage content
+  const renderInitialStage = useCallback(() => {
+    return (
+      <div className="button-container">
+        <button
+          className={`talk-button ${isRecording ? 'recording' : ''}`}
+          onMouseDown={startRecording}
+          onMouseUp={stopRecordingAvailability}
+          onTouchStart={startRecording}
+          onTouchEnd={stopRecordingAvailability}
+        >
+          {isRecording 
+            ? "Release when done" 
+            : "Press to talk. Say when you are available for an appointment, like 'Tuesdays after 4'"}
+        </button>
+        
+        {text && (
+          <div className="text-container">
+            <p className="recognized-text">"{text}"</p>
+          </div>
+        )}
+      </div>
+    );
+  }, [isRecording, text, startRecording, stopRecordingAvailability]);
+  
+  // Render the complaint stage content
+  const renderComplaintStage = useCallback(() => {
+    return (
+      <>
+        {availability && (
+          <div className="availability-container">
+            <h3>Your Availability:</h3>
+            <p>{availability}</p>
+          </div>
+        )}
+        
+        <div className="button-container">
+          <button
+            className={`complaint-button ${isRecording ? 'recording' : ''}`}
+            onMouseDown={startRecording}
+            onMouseUp={stopRecordingComplaint}
+            onTouchStart={startRecording}
+            onTouchEnd={stopRecordingComplaint}
+          >
+            {isRecording ? "Release when done" : "Say your chief complaint"}
+          </button>
+        </div>
+        
+        {text && !complaint && (
+          <div className="text-container">
+            <p className="recognized-text">"{text}"</p>
+            <div className="text-actions">
+              <button 
+                className="confirm-button"
+                onClick={() => setComplaint(text)}
               >
-                {isRecording 
-                  ? "Release when done" 
-                  : "Press to talk. Say when you are available for an appointment, like 'Tuesdays after 4'"}
+                Confirm
+              </button>
+              <button 
+                className="erase-button"
+                onClick={() => setText("")}
+              >
+                Erase
               </button>
             </div>
-            
-            {text && (
-              <div className="text-container">
-                <p className="recognized-text">"{text}"</p>
-              </div>
-            )}
-          </>
-        );
+          </div>
+        )}
         
-      case "complaint":
-        return (
-          <>
-            {availability && (
-              <div className="availability-container">
-                <h3>Your Availability:</h3>
-                <p>{availability}</p>
-              </div>
-            )}
-            
-            <div className="button-container">
-              <button
-                className={`complaint-button ${isRecording ? 'recording' : ''}`}
-                onMouseDown={startRecording}
-                onMouseUp={stopRecordingComplaint}
-                onTouchStart={startRecording}
-                onTouchEnd={stopRecordingComplaint}
-              >
-                {isRecording ? "Release when done" : "Say your chief complaint"}
-              </button>
+        {complaint && (
+          <div className="complaint-container">
+            <h3>Your Chief Complaint:</h3>
+            <p>{complaint}</p>
+            <button 
+              className="edit-button"
+              onClick={clearComplaint}
+            >
+              Edit
+            </button>
+          </div>
+        )}
+        
+        {/* Results section - only shown in complaint stage */}
+        {people.length > 0 && (
+          <div className="results-container">
+            <h2 className="results-title">Available Counselors</h2>
+            <p className="long-press-instruction">Long Press a counselor to reach out.</p>
+            <div className="people-list">
+              {people.map(person => (
+                <PersonCard key={person.id} person={person} />
+              ))}
             </div>
-            
-            {text && !complaint && (
-              <div className="text-container">
-                <p className="recognized-text">"{text}"</p>
-                <div className="text-actions">
-                  <button 
-                    className="confirm-button"
-                    onClick={() => setComplaint(text)}
-                  >
-                    Confirm
-                  </button>
-                  <button 
-                    className="erase-button"
-                    onClick={() => setText("")}
-                  >
-                    Erase
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {complaint && (
-              <div className="complaint-container">
-                <h3>Your Chief Complaint:</h3>
-                <p>{complaint}</p>
-                <button 
-                  className="edit-button"
-                  onClick={clearComplaint}
-                >
-                  Edit
-                </button>
-              </div>
-            )}
-          </>
-        );
-        
-      default:
-        return null;
-    }
+          </div>
+        )}
+      </>
+    );
   }, [
-    appStage, 
-    isRecording, 
-    text, 
-    availability, 
-    complaint, 
-    startRecording, 
-    stopRecordingAvailability, 
-    stopRecordingComplaint, 
-    clearComplaint
+    availability,
+    isRecording,
+    text,
+    complaint,
+    people,
+    startRecording,
+    stopRecordingComplaint,
+    clearComplaint,
+    PersonCard
   ]);
   
   return (
@@ -387,21 +394,20 @@ function App() {
           <span className="user-name">{userInfo.name}</span>
           <span className="user-email">{userInfo.email}</span>
         </div>
+        
+        {/* Hidden test button - only visible in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <button 
+            onClick={handleSimulateSearch}
+            className="test-button"
+          >
+            Simulate Availability (Test)
+          </button>
+        )}
       </div>
       
-      <div className="header">
-        <h1 className="title">Therapist Finder</h1>
-        {/* Testing button for browsers */}
-        <button 
-          onClick={handleSimulateSearch}
-          className="test-button"
-        >
-          Simulate Availability (Test)
-        </button>
-      </div>
-      
-      {/* Main content area */}
-      {renderMainContent()}
+      {/* Main content - conditionally rendered based on app stage */}
+      {appStage === "initial" ? renderInitialStage() : renderComplaintStage()}
       
       {/* Loading indicator */}
       {isLoading && (
@@ -415,19 +421,6 @@ function App() {
       {error && (
         <div className="error-container">
           <p className="error-message">{error}</p>
-        </div>
-      )}
-      
-      {/* Results section */}
-      {people.length > 0 && (
-        <div className="results-container">
-          <h2 className="results-title">Available Counselors</h2>
-          <p className="long-press-instruction">Long Press a counselor to reach out.</p>
-          <div className="people-list">
-            {people.map(person => (
-              <PersonCard key={person.id} person={person} />
-            ))}
-          </div>
         </div>
       )}
     </div>

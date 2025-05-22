@@ -1,11 +1,13 @@
 /* Main container */
 .app-container {
-  @apply flex flex-col items-center justify-start min-h-screen bg-gray-100 px-4 py-0;
+  @apply flex flex-col items-center justify-start min-h-screen bg-gray-900 px-4 py-0;
+  background-color: #0a1929; /* Very dark blue background */
 }
 
 /* User info header */
 .user-info-header {
-  @apply w-full bg-gray-800 text-white py-3 px-4 mb-6 sticky top-0 z-10 flex justify-between items-center;
+  @apply w-full bg-gray-950 text-white py-3 px-4 mb-6 sticky top-0 z-10 flex justify-between items-center;
+  border-bottom: 1px solid #1e3a5f;
 }
 
 .user-info {
@@ -13,16 +15,16 @@
 }
 
 .user-name {
-  @apply font-bold text-lg mr-2;
+  @apply font-bold text-lg mr-2 text-blue-300;
 }
 
 .user-email {
-  @apply text-sm text-gray-300;
+  @apply text-sm text-gray-400;
 }
 
 /* Test button for debugging */
 .test-button {
-  @apply bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded
+  @apply bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-1 px-2 rounded
          transition-colors duration-200;
 }
 
@@ -33,32 +35,33 @@
 
 /* Talk button styling */
 .talk-button {
-  @apply bg-green-500 hover:bg-green-600 text-white font-bold text-xl py-6 px-8 rounded-full
+  @apply bg-green-600 hover:bg-green-700 text-white font-bold text-xl py-6 px-8 rounded-full
          shadow-lg transform transition-all duration-200 active:scale-95 
-         focus:outline-none focus:ring-4 focus:ring-green-300 flex flex-col items-center justify-center
-         h-64 w-64 text-center;
+         focus:outline-none focus:ring-4 focus:ring-green-900 flex flex-col items-center justify-center
+         h-64 w-64 text-center border-2 border-green-500;
 }
 
 /* Complaint button styling */
 .complaint-button {
-  @apply bg-blue-500 hover:bg-blue-600 text-white font-bold text-xl py-6 px-8 rounded-full
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl py-6 px-8 rounded-full
          shadow-lg transform transition-all duration-200 active:scale-95 
-         focus:outline-none focus:ring-4 focus:ring-blue-300 flex items-center justify-center
-         h-64 w-64 text-center;
+         focus:outline-none focus:ring-4 focus:ring-blue-900 flex items-center justify-center
+         h-64 w-64 text-center border-2 border-blue-500;
 }
 
 /* Recording state */
 .talk-button.recording, .complaint-button.recording {
-  @apply bg-red-500 hover:bg-red-600 animate-pulse scale-105 focus:ring-red-300;
+  @apply bg-red-600 hover:bg-red-700 animate-pulse scale-105 focus:ring-red-900 border-red-500;
 }
 
 /* Text display */
 .text-container {
-  @apply w-full max-w-2xl bg-white rounded-lg shadow-md p-4 mb-8 mt-4;
+  @apply w-full max-w-2xl bg-gray-800 rounded-lg shadow-md p-4 mb-8 mt-4 text-white;
+  border: 1px solid #2d4a6d;
 }
 
 .recognized-text {
-  @apply text-lg text-gray-700 text-center italic mb-4;
+  @apply text-lg text-gray-300 text-center italic mb-4;
 }
 
 .text-actions {
@@ -66,40 +69,50 @@
 }
 
 .confirm-button {
-  @apply bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors;
+  @apply bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors;
 }
 
 .erase-button {
-  @apply bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors;
+  @apply bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors;
 }
 
 .edit-button {
-  @apply bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors mt-2;
+  @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors mt-2;
 }
 
 /* Availability display */
 .availability-container {
-  @apply w-full max-w-2xl bg-white rounded-lg shadow-md p-4 mb-6;
+  @apply w-full max-w-2xl bg-gray-800 rounded-lg shadow-md p-4 mb-6 text-white;
+  border: 1px solid #2d4a6d;
+}
+
+.availability-container h3 {
+  @apply text-blue-300 font-bold mb-2;
 }
 
 /* Complaint display */
 .complaint-container {
-  @apply w-full max-w-2xl bg-white rounded-lg shadow-md p-4 mb-8;
+  @apply w-full max-w-2xl bg-gray-800 rounded-lg shadow-md p-4 mb-8 text-white;
+  border: 1px solid #2d4a6d;
+}
+
+.complaint-container h3 {
+  @apply text-blue-300 font-bold mb-2;
 }
 
 /* Loading indicator */
 .loading-container {
-  @apply flex flex-col items-center justify-center p-4 mb-4;
+  @apply flex flex-col items-center justify-center p-4 mb-4 text-white;
 }
 
 .loading-spinner {
-  @apply w-10 h-10 border-4 border-gray-300 rounded-full animate-spin mb-2;
-  border-top-color: #10b981;
+  @apply w-10 h-10 border-4 border-gray-700 rounded-full animate-spin mb-2;
+  border-top-color: #3b82f6; /* blue-500 */
 }
 
 /* Error message */
 .error-container {
-  @apply w-full max-w-2xl bg-red-50 text-red-800 rounded-lg p-4 mb-8;
+  @apply w-full max-w-2xl bg-red-900 text-red-100 rounded-lg p-4 mb-8 border border-red-700;
 }
 
 .error-message {
@@ -108,15 +121,15 @@
 
 /* Results section */
 .results-container {
-  @apply w-full max-w-2xl mt-4;
+  @apply w-full max-w-2xl mt-4 text-white;
 }
 
 .results-title {
-  @apply text-2xl font-bold text-gray-800 mb-2;
+  @apply text-2xl font-bold text-blue-300 mb-2;
 }
 
 .long-press-instruction {
-  @apply text-gray-600 italic mb-4;
+  @apply text-gray-400 italic mb-4;
 }
 
 .people-list {
@@ -124,8 +137,8 @@
 }
 
 .person-card {
-  @apply bg-white rounded-lg shadow-md p-4 flex items-start relative
-         transform transition-transform duration-200;
+  @apply bg-gray-800 rounded-lg shadow-md p-4 flex items-start relative
+         transform transition-transform duration-200 border border-gray-700;
 }
 
 .person-card:active {
@@ -133,7 +146,7 @@
 }
 
 .swipe-instruction {
-  @apply absolute top-0 right-0 text-xs text-gray-400 italic p-1;
+  @apply absolute top-0 right-0 text-xs text-gray-500 italic p-1;
 }
 
 .person-image {
@@ -149,15 +162,15 @@
 }
 
 .person-name {
-  @apply text-xl font-bold text-gray-800 mb-1;
+  @apply text-xl font-bold text-blue-300 mb-1;
 }
 
 .person-description {
-  @apply text-gray-600 mb-2;
+  @apply text-gray-300 mb-2;
 }
 
 .response-message {
-  @apply bg-green-50 text-green-800 p-3 rounded-lg mt-2 text-sm;
+  @apply bg-green-900 text-green-100 p-3 rounded-lg mt-2 text-sm border border-green-700;
 }
 
 /* Responsive adjustments */

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Device } from "@capacitor/device";
 import { useSwipeable } from "react-swipeable";
@@ -53,7 +53,7 @@ function App() {
   }, []);
   
   // Start recording when button is pressed
-  const startRecording = () => {
+  const startRecording = useCallback(() => {
     setIsRecording(true);
     setError(null);
     
@@ -91,10 +91,10 @@ function App() {
       setError(`Failed to start recording: ${err.message}`);
       setIsRecording(false);
     }
-  };
+  }, []);
   
   // Stop recording when button is released (availability stage)
-  const stopRecordingAvailability = async () => {
+  const stopRecordingAvailability = useCallback(async () => {
     console.log("Stopping recording for availability, current text:", text);
     
     if (recognitionRef.current) {
@@ -143,10 +143,10 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [text, userInfo]);
   
   // Stop recording for complaint
-  const stopRecordingComplaint = () => {
+  const stopRecordingComplaint = useCallback(() => {
     console.log("Stopping recording for complaint, current text:", text);
     
     if (recognitionRef.current) {
@@ -156,26 +156,26 @@ function App() {
     
     setIsRecording(false);
     setComplaint(text || "No complaint specified");
-  };
+  }, [text]);
   
   // Confirm complaint
-  const confirmComplaint = () => {
+  const confirmComplaint = useCallback(() => {
     console.log("Complaint confirmed:", complaint);
-  };
+  }, [complaint]);
   
   // Clear complaint and start over
-  const clearComplaint = () => {
+  const clearComplaint = useCallback(() => {
     setComplaint("");
     setText("");
-  };
+  }, []);
   
   // Remove a person from the list
-  const removePerson = (personId) => {
-    setPeople(people.filter(person => person.id !== personId));
-  };
+  const removePerson = useCallback((personId) => {
+    setPeople(prevPeople => prevPeople.filter(person => person.id !== personId));
+  }, []);
   
   // Handle long press on a counselor
-  const handleCounselorLongPress = async (counselor) => {
+  const handleCounselorLongPress = useCallback(async (counselor) => {
     try {
       setIsLoading(true);
       
@@ -211,10 +211,27 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userInfo, complaint]);
   
-  // Render person card with swipe functionality
-  const renderPersonCard = (person) => {
+  // Simulated button press for testing in browser
+  const handleSimulateSearch = useCallback(() => {
+    const demoText = "I'm available Tuesdays after 4pm and Thursday mornings";
+    console.log("Simulating search with text:", demoText);
+    setText(demoText);
+    setAvailability(demoText);
+    
+    // Process the simulated search
+    setIsLoading(true);
+    setTimeout(() => {
+      console.log("Setting people with mock data:", mockPeopleData.people);
+      setPeople(mockPeopleData.people);
+      setAppStage("complaint");
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+  
+  // Create a reusable person card component
+  const PersonCard = useCallback(({ person }) => {
     const swipeHandlers = useSwipeable({
       onSwipedLeft: () => removePerson(person.id),
       onSwipedRight: () => removePerson(person.id),
@@ -260,27 +277,10 @@ function App() {
         </div>
       </div>
     );
-  };
-  
-  // Simulated button press for testing in browser
-  const handleSimulateSearch = () => {
-    const demoText = "I'm available Tuesdays after 4pm and Thursday mornings";
-    console.log("Simulating search with text:", demoText);
-    setText(demoText);
-    setAvailability(demoText);
-    
-    // Process the simulated search
-    setIsLoading(true);
-    setTimeout(() => {
-      console.log("Setting people with mock data:", mockPeopleData.people);
-      setPeople(mockPeopleData.people);
-      setAppStage("complaint");
-      setIsLoading(false);
-    }, 1000);
-  };
+  }, [removePerson, handleCounselorLongPress, responses]);
   
   // Render the main content based on app stage
-  const renderMainContent = () => {
+  const renderMainContent = useCallback(() => {
     switch (appStage) {
       case "initial":
         return (
@@ -367,7 +367,17 @@ function App() {
       default:
         return null;
     }
-  };
+  }, [
+    appStage, 
+    isRecording, 
+    text, 
+    availability, 
+    complaint, 
+    startRecording, 
+    stopRecordingAvailability, 
+    stopRecordingComplaint, 
+    clearComplaint
+  ]);
   
   return (
     <div className="app-container">
@@ -414,7 +424,9 @@ function App() {
           <h2 className="results-title">Available Counselors</h2>
           <p className="long-press-instruction">Long Press a counselor to reach out.</p>
           <div className="people-list">
-            {people.map(person => renderPersonCard(person))}
+            {people.map(person => (
+              <PersonCard key={person.id} person={person} />
+            ))}
           </div>
         </div>
       )}

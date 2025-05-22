@@ -9,7 +9,13 @@
 }
 
 .title {
-  @apply text-3xl font-bold text-gray-800;
+  @apply text-3xl font-bold text-gray-800 mb-2;
+}
+
+/* Test button for debugging */
+.test-button {
+  @apply bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-4 rounded
+         mb-4 transition-colors duration-200;
 }
 
 /* Button container */
@@ -35,16 +41,16 @@
 }
 
 .recognized-text {
-  @apply text-lg text-gray-700;
+  @apply text-lg text-gray-700 text-center italic;
 }
 
 /* Loading indicator */
 .loading-container {
-  @apply flex flex-col items-center justify-center p-4;
+  @apply flex flex-col items-center justify-center p-4 mb-4;
 }
 
 .loading-spinner {
-  @apply w-10 h-10 border-4 border-gray-300 rounded-full animate-spin;
+  @apply w-10 h-10 border-4 border-gray-300 rounded-full animate-spin mb-2;
   border-top-color: #10b981;
 }
 

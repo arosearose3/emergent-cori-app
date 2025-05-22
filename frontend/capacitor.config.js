@@ -6,9 +6,6 @@ const config = {
   plugins: {
     SplashScreen: {
       launchShowDuration: 0
-    },
-    Permissions: {
-      permissions: ["microphone"]
     }
   },
   server: {
@@ -16,4 +13,4 @@ const config = {
   }
 };
 
-export default config;
+module.exports = config;

@@ -5,12 +5,12 @@ import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { useSwipeable } from "react-swipeable";
 import axios from "axios";
 import "./App.css";
-// Import mock data
+// Import mock data for fallback
 import { mockPeopleData } from "./mockData";
 
-// Backend URL from environment variables
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
-const API = `${BACKEND_URL}/api`;
+// API endpoints
+const COUNSELORS_API = "https://corisystem.org/coriapp/counselorsByAvailability";
+const MESSAGE_API = "https://corisystem.org/coriapp/clientNoteToTherapist";
 
 function App() {
   // App state
@@ -25,6 +25,10 @@ function App() {
   const [userInfo, setUserInfo] = useState({ name: "", email: "" });
   const [responses, setResponses] = useState({});
   const [speechAvailable, setSpeechAvailable] = useState(false);
+  const [showMessagePreview, setShowMessagePreview] = useState(false);
+  const [selectedTherapist, setSelectedTherapist] = useState(null);
+  const [editableComplaint, setEditableComplaint] = useState("");
+  const [messageStatus, setMessageStatus] = useState(null);
   
   // Initialize speech recognition on component mount
   useEffect(() => {
@@ -74,7 +78,6 @@ function App() {
     };
     
     getUserInfo();
-    console.log("Mock data loaded:", mockPeopleData);
   }, []);
   
   // Start recording when button is pressed
@@ -144,27 +147,34 @@ function App() {
         console.log("Processing search with text:", availabilityText);
         setIsLoading(true);
         
-        // Transform text to structured JSON
-        const structuredData = {
-          query: availabilityText,
-          timestamp: new Date().toISOString(),
-          userInfo: userInfo
-        };
-        
-        console.log("Structured data:", structuredData);
-        
-        // For testing: Use mock data instead of API call
-        // In production, uncomment the API call and remove the mock data usage
-        // const response = await axios.post(`${API}/search-counselors`, structuredData);
-        // setPeople(response.data.people || []);
-        
-        // Simulate network delay
-        console.log("Simulating API call with mock data...");
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Update the people with mock data (would be counselors from the API)
-        console.log("Setting people with mock data:", mockPeopleData.people);
-        setPeople(mockPeopleData.people);
+        try {
+          // Call the external API to get counselors by availability
+          const response = await axios.post(COUNSELORS_API, {
+            availabilityText: availabilityText,
+            userInfo: userInfo
+          });
+          
+          console.log("API response:", response.data);
+          
+          if (response.data && Array.isArray(response.data)) {
+            // Format the data to match our expected structure
+            const formattedPeople = response.data.map((therapist, index) => ({
+              id: therapist.id || index + 1,
+              name: therapist.TherapistName || "Unknown",
+              website: therapist.TherapistWebsite || "#",
+              photo: `https://corisystem.org/coriapp/image?id=${therapist.id || index + 1}`,
+              description: therapist.description || `Available during ${availabilityText}`
+            }));
+            
+            setPeople(formattedPeople);
+          } else {
+            throw new Error("Invalid response format from API");
+          }
+        } catch (apiErr) {
+          console.error("API call failed, using mock data:", apiErr);
+          // Fallback to mock data in case of API failure
+          setPeople(mockPeopleData.people);
+        }
         
         // Move to the next stage (complaint)
         setAppStage("complaint");
@@ -232,8 +242,19 @@ function App() {
     setPeople(prevPeople => prevPeople.filter(person => person.id !== personId));
   }, []);
   
-  // Handle long press on a counselor
-  const handleCounselorLongPress = useCallback(async (counselor) => {
+  // Handle long press on a counselor - show message preview
+  const handleCounselorLongPress = useCallback((counselor) => {
+    console.log("Long press detected for counselor:", counselor);
+    setSelectedTherapist(counselor);
+    setEditableComplaint(complaint);
+    setShowMessagePreview(true);
+    setMessageStatus(null);
+  }, [complaint]);
+  
+  // Send message to therapist
+  const sendMessageToTherapist = useCallback(async () => {
+    if (!selectedTherapist) return;
+    
     try {
       setIsLoading(true);
       
@@ -241,35 +262,62 @@ function App() {
       const requestData = {
         patientName: userInfo.name,
         patientEmail: userInfo.email,
-        chiefComplaint: complaint,
-        therapistId: counselor.id
+        chiefComplaint: editableComplaint,
+        therapistId: selectedTherapist.id,
+        therapistName: selectedTherapist.name
       };
       
-      console.log("Sending request to reach out:", requestData);
+      console.log("Sending message to therapist:", requestData);
       
-      // Simulate API call
-      // In production, use a real API call:
-      // const response = await axios.post(`${API}/reach-out`, requestData);
-      // const responseText = response.data.message;
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock response
-      const responseText = `Thank you for reaching out to ${counselor.name}. They will contact you at ${userInfo.email} within 24 hours to discuss your appointment options.`;
-      
-      // Store the response for this counselor
-      setResponses(prev => ({
-        ...prev,
-        [counselor.id]: responseText
-      }));
+      try {
+        // Call the external API to send message to therapist
+        const response = await axios.post(MESSAGE_API, requestData);
+        
+        console.log("Message API response:", response.data);
+        
+        // Set success message
+        setMessageStatus({
+          success: true,
+          message: response.data.message || "Message sent successfully!"
+        });
+        
+        // Store the response for this counselor
+        setResponses(prev => ({
+          ...prev,
+          [selectedTherapist.id]: response.data.message || "Message sent successfully!"
+        }));
+        
+        // Close the preview after a delay
+        setTimeout(() => {
+          setShowMessagePreview(false);
+        }, 3000);
+      } catch (apiErr) {
+        console.error("API call failed:", apiErr);
+        
+        // Set error message
+        setMessageStatus({
+          success: false,
+          message: apiErr.response?.data?.error || "Failed to send message. Please try again."
+        });
+      }
     } catch (err) {
-      console.error("Failed to reach out:", err);
-      setError(`Failed to reach out: ${err.message}`);
+      console.error("Failed to send message:", err);
+      setMessageStatus({
+        success: false,
+        message: "An unexpected error occurred. Please try again."
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [userInfo, complaint]);
+  }, [selectedTherapist, userInfo, editableComplaint]);
+  
+  // Cancel message preview
+  const cancelMessagePreview = useCallback(() => {
+    setShowMessagePreview(false);
+    setSelectedTherapist(null);
+    setEditableComplaint("");
+    setMessageStatus(null);
+  }, []);
   
   // Simulated button press for testing in browser
   const handleSimulateSearch = useCallback(() => {
@@ -325,6 +373,11 @@ function App() {
         </div>
         <div className="person-details">
           <h3 className="person-name">{person.name}</h3>
+          {person.website && (
+            <a href={person.website} target="_blank" rel="noopener noreferrer" className="person-website">
+              {person.website}
+            </a>
+          )}
           <p className="person-description">{person.description}</p>
           
           {responses[person.id] && (
@@ -444,6 +497,74 @@ function App() {
     PersonCard
   ]);
   
+  // Render message preview modal
+  const renderMessagePreview = useCallback(() => {
+    if (!showMessagePreview || !selectedTherapist) return null;
+    
+    return (
+      <div className="message-preview-overlay">
+        <div className="message-preview-modal">
+          <h2 className="message-preview-title">Message Preview</h2>
+          
+          <div className="message-preview-content">
+            <div className="message-field">
+              <label>To:</label>
+              <span>{selectedTherapist.name}</span>
+            </div>
+            
+            <div className="message-field">
+              <label>From:</label>
+              <span>{userInfo.name} ({userInfo.email})</span>
+            </div>
+            
+            <div className="message-field">
+              <label>Chief Complaint:</label>
+              <textarea
+                value={editableComplaint}
+                onChange={(e) => setEditableComplaint(e.target.value)}
+                className="complaint-textarea"
+                placeholder="Enter your chief complaint here..."
+              />
+            </div>
+          </div>
+          
+          {messageStatus && (
+            <div className={`message-status ${messageStatus.success ? 'success' : 'error'}`}>
+              {messageStatus.message}
+            </div>
+          )}
+          
+          <div className="message-preview-actions">
+            <button 
+              className="cancel-button"
+              onClick={cancelMessagePreview}
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+            
+            <button 
+              className="send-button"
+              onClick={sendMessageToTherapist}
+              disabled={isLoading || !editableComplaint.trim()}
+            >
+              {isLoading ? "Sending..." : "Send Message"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }, [
+    showMessagePreview,
+    selectedTherapist,
+    userInfo,
+    editableComplaint,
+    messageStatus,
+    isLoading,
+    cancelMessagePreview,
+    sendMessageToTherapist
+  ]);
+  
   return (
     <div className="app-container">
       {/* User info header */}
@@ -453,17 +574,7 @@ function App() {
           <span className="user-email">{userInfo.email}</span>
         </div>
         
-        {/* Hidden test button - only visible in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <button 
-            onClick={handleSimulateSearch}
-            className="test-button"
-          >
-            Simulate Availability (Test)
-          </button>
-        )}
-        
-        {/* Show test button in production for demo purposes */}
+        {/* Test button for demo purposes */}
         <button 
           onClick={handleSimulateSearch}
           className="test-button"
@@ -489,6 +600,9 @@ function App() {
           <p className="error-message">{error}</p>
         </div>
       )}
+      
+      {/* Message preview modal */}
+      {renderMessagePreview()}
     </div>
   );
 }
